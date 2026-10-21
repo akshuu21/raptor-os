@@ -153,9 +153,22 @@ fails on the build-gate and console-log versions of them.
 | A business rule | `packages/core/src/<module>/` with its test beside it |
 | A query | `packages/db/src/`, behind the existing Drizzle client |
 | A schema change | a NEW file in `packages/db/migrations/`, numbered next |
+| Preview data | `scripts/preview-seed.sql` — never only inside the database snapshot |
+| Preview content (news, partners, site settings) | `scripts/preview-seed-cms.sql` — same rule, same reason |
 | A page or component | `apps/web/src/app/(site)` or `(app)`, using `@raptor/ui` primitives |
 | A publishable content type | `packages/cms/src/`, with a migration for the `cms_*` table |
 | An auth behaviour | `packages/auth/src/config.ts` and its test — and the reason goes in the header |
+
+### If you touch the preview data or the art
+
+The roster resolves a portrait **by handle**: the handle is
+`person_profile.display_name`, and the site asks for
+`/placeholders/player-<handle>.png`, falling back to a generic portrait when
+the file is absent. A mismatch is silent — it is a fallback, not an error.
+
+`apps/web/src/__tests__/preview-content.test.ts` checks the two against each
+other, and against the content seed. If you rename a handle, rename the art
+(or the seed) in the same change and run that test.
 
 ---
 
@@ -238,8 +251,10 @@ The pull request body should answer: what changed, why, how it was verified
 | The TOTP challenge is gone but the policy is not | a privileged account is refused a session because the enrolment flag is missing | set the flag server-side; never loosen the policy |
 | An undeclared column vanishes from a payload | the installed adapter builds returned objects from the model's **declared** fields | declare the field on the model |
 | `LANGUAGE sql` in a migration | a SQL-language function resolves its body's relations at CREATION time, so it needs other packages' tables to exist first | use `plpgsql`, which resolves at call time |
+| A `plpgsql` function returns a `varchar` where it declares `text` | it raises "structure of query does not match function result type" at CALL time, and the caller usually swallows it | cast at the source (`name::text`), and CALL the function in a test — a function nothing calls is a function nothing checks |
 | `bigint` columns and node-postgres | `int8` comes back as a STRING, so `+` concatenates | use `double precision` for values that are arithmetic, or convert at the driver |
-| Rate limits are per-IP and per-account | 5 sign-ins per 60s, 5 password failures per account | pace yourself; the scripts do |
+| Rate limits are per-ADDRESS and per-account | 5 sign-ins per minute in production, 30 in development; 5 password failures per account | pace yourself; the scripts do |
+
 | `pnpm dev` without `dev:local` | every auth route answers 503 | always use `pnpm dev:local` |
 | PowerShell mangles `\|\|` and quotes | a command "works" in bash and not in the shell | write a temporary `.mjs` file and run it with `node` |
 

@@ -75,30 +75,85 @@ VALUES ('1d2c3992-8eb2-40cd-833f-9c4fa75471b4', '0c295a27-1295-4dcf-9a0e-2f77a77
         'forming', true)
 ON CONFLICT (org_id, slug) DO NOTHING;
 
--- Players (handles researched October 2026; preview-marked, public profiles)
+-- Players (preview-marked, public profiles)
+--
+-- THE HANDLES ARE THE ART FILENAMES, AND THAT IS THE POINT
+-- -------------------------------------------------------
+-- The public roster resolves a portrait by handle: the site asks for
+-- `/placeholders/player-<handle>.png` and falls back to the generic
+-- `player-portrait.svg` when that file does not exist
+-- (`apps/web/src/components/public/art.ts`). The committed art is named for
+-- five handles - RExANNA, RExFURRYJOD, RExIGRIS, RExSANKU, RExZEROIGL - and
+-- they are the handles seeded here.
+--
+-- They used not to match: the seed carried five researched display names
+-- ("Jelly", "Hydro" and so on) while the art carried the REx* set, so the
+-- roster resolved NOTHING and every portrait on the site was the generic
+-- placeholder. The art was committed, reachable by nobody, and the symptom
+-- read as "the images are missing". The portraits are illustrated brand art
+-- in the Raptor palette, not photographs of people, so pairing them with a
+-- handle is a naming decision and not an attribution one.
+--
+-- A handle change means renaming the art to match, or changing the seed to
+-- match the art. This file follows the art, because the art is the expensive
+-- half to produce and the reviewed half.
 INSERT INTO public.person (id, external_ref) VALUES
-  ('b44f16ba-1efb-4ac8-b2ee-96467a874885', 'preview:player-jelly'),
-  ('25c9ce24-d98c-42b3-8fc8-e4377c79ca03', 'preview:player-kiolmao'),
-  ('294f46af-4b43-4583-aa48-731c9f75c6f2', 'preview:player-harsh'),
-  ('7ebd2393-f935-4d8f-9e96-92071f02a0c3', 'preview:player-hydro'),
-  ('4908ae96-c0d1-4de6-827a-68fc0862b131', 'preview:player-rony')
-ON CONFLICT DO NOTHING;
+  ('b44f16ba-1efb-4ac8-b2ee-96467a874885', 'preview:player-rexigris'),
+  ('25c9ce24-d98c-42b3-8fc8-e4377c79ca03', 'preview:player-rexanna'),
+  ('294f46af-4b43-4583-aa48-731c9f75c6f2', 'preview:player-rexsanku'),
+  ('7ebd2393-f935-4d8f-9e96-92071f02a0c3', 'preview:player-rexfurryjod'),
+  ('4908ae96-c0d1-4de6-827a-68fc0862b131', 'preview:player-rexzeroigl')
+ON CONFLICT (id) DO UPDATE SET external_ref = EXCLUDED.external_ref;
 
+-- `display_name` IS the handle for the public roster: `roster_handles()`
+-- returns `person_profile.display_name` as the handle, because a person has no
+-- separate handle column in this schema. That is why the portrait lookup above
+-- works on this value.
+--
+-- The upsert UPDATES rather than doing nothing: a seed that cannot converge an
+-- existing row is a seed that only works on a database that has never seen it.
 INSERT INTO public.person_profile (person_id, display_name, profile_visibility) VALUES
-  ('b44f16ba-1efb-4ac8-b2ee-96467a874885', 'Jelly', 'public'),
-  ('25c9ce24-d98c-42b3-8fc8-e4377c79ca03', 'KioLmao', 'public'),
-  ('294f46af-4b43-4583-aa48-731c9f75c6f2', 'Harsh', 'public'),
-  ('7ebd2393-f935-4d8f-9e96-92071f02a0c3', 'Hydro', 'public'),
-  ('4908ae96-c0d1-4de6-827a-68fc0862b131', 'Rony', 'public')
-ON CONFLICT (person_id) DO NOTHING;
+  ('b44f16ba-1efb-4ac8-b2ee-96467a874885', 'RExIGRIS', 'public'),
+  ('25c9ce24-d98c-42b3-8fc8-e4377c79ca03', 'RExANNA', 'public'),
+  ('294f46af-4b43-4583-aa48-731c9f75c6f2', 'RExSANKU', 'public'),
+  ('7ebd2393-f935-4d8f-9e96-92071f02a0c3', 'RExFURRYJOD', 'public'),
+  ('4908ae96-c0d1-4de6-827a-68fc0862b131', 'RExZEROIGL', 'public')
+ON CONFLICT (person_id) DO UPDATE SET display_name = EXCLUDED.display_name;
+
+-- THE LINEUP
+-- ---------
+-- One squad, in the division, with a captain. The Academy is left forming with
+-- no published lineup: it exists as a team, and it says so.
+--
+-- RExSANKU captains, and RExZEROIGL is in the squad rather than in the
+-- Academy. The Academy team has no division, so a player in it shows under
+-- "Unplaced division" and the featured card — the first team by name, which is
+-- the Academy — had no one in it while the team that has five portraits and a
+-- division was a line of handles. The squad and the art are now the same
+-- thing: five players, five committed portraits, one captain.
+-- The preview roster is owned by this file, so it is REPLACED rather than
+-- merged: the memberships below are the whole preview roster, and a row left
+-- behind by an earlier version of this seed (a player in a team that no longer
+-- fields them) would keep showing on the public site. The delete is scoped to
+-- the five preview people, so it can never touch a real membership.
+DELETE FROM public.team_membership
+ WHERE "org_id" = '0c295a27-1295-4dcf-9a0e-2f77a772f14d'
+   AND "person_id" IN (
+         'b44f16ba-1efb-4ac8-b2ee-96467a874885',
+         '25c9ce24-d98c-42b3-8fc8-e4377c79ca03',
+         '294f46af-4b43-4583-aa48-731c9f75c6f2',
+         '7ebd2393-f935-4d8f-9e96-92071f02a0c3',
+         '4908ae96-c0d1-4de6-827a-68fc0862b131'
+       );
 
 INSERT INTO public.team_membership (org_id, team_id, person_id, role_in_team, share_percent, valid_from, joined_at) VALUES
-  ('0c295a27-1295-4dcf-9a0e-2f77a772f14d', '444f49a2-3065-4fa4-8a5a-fd2a14e24fd5', 'b44f16ba-1efb-4ac8-b2ee-96467a874885', 'captain', 0, '2025-03-27T00:00:00Z', '2025-03-27T00:00:00Z'),
-  ('0c295a27-1295-4dcf-9a0e-2f77a772f14d', '444f49a2-3065-4fa4-8a5a-fd2a14e24fd5', '25c9ce24-d98c-42b3-8fc8-e4377c79ca03', 'player', 0, '2025-03-27T00:00:00Z', '2025-03-27T00:00:00Z'),
-  ('0c295a27-1295-4dcf-9a0e-2f77a772f14d', '444f49a2-3065-4fa4-8a5a-fd2a14e24fd5', '294f46af-4b43-4583-aa48-731c9f75c6f2', 'player', 0, '2025-07-21T00:00:00Z', '2025-07-21T00:00:00Z'),
+  ('0c295a27-1295-4dcf-9a0e-2f77a772f14d', '444f49a2-3065-4fa4-8a5a-fd2a14e24fd5', '294f46af-4b43-4583-aa48-731c9f75c6f2', 'captain', 0, '2025-03-27T00:00:00Z', '2025-03-27T00:00:00Z'),
+  ('0c295a27-1295-4dcf-9a0e-2f77a772f14d', '444f49a2-3065-4fa4-8a5a-fd2a14e24fd5', 'b44f16ba-1efb-4ac8-b2ee-96467a874885', 'player', 0, '2025-03-27T00:00:00Z', '2025-03-27T00:00:00Z'),
+  ('0c295a27-1295-4dcf-9a0e-2f77a772f14d', '444f49a2-3065-4fa4-8a5a-fd2a14e24fd5', '25c9ce24-d98c-42b3-8fc8-e4377c79ca03', 'player', 0, '2025-07-21T00:00:00Z', '2025-07-21T00:00:00Z'),
   ('0c295a27-1295-4dcf-9a0e-2f77a772f14d', '444f49a2-3065-4fa4-8a5a-fd2a14e24fd5', '7ebd2393-f935-4d8f-9e96-92071f02a0c3', 'player', 0, '2025-07-21T00:00:00Z', '2025-07-21T00:00:00Z'),
-  ('0c295a27-1295-4dcf-9a0e-2f77a772f14d', '1d2c3992-8eb2-40cd-833f-9c4fa75471b4', '4908ae96-c0d1-4de6-827a-68fc0862b131', 'player', 0, '2025-12-12T00:00:00Z', '2025-12-12T00:00:00Z')
-ON CONFLICT (org_id, team_id, person_id) WHERE valid_to IS NULL DO NOTHING;
+  ('0c295a27-1295-4dcf-9a0e-2f77a772f14d', '444f49a2-3065-4fa4-8a5a-fd2a14e24fd5', '4908ae96-c0d1-4de6-827a-68fc0862b131', 'player', 0, '2025-12-12T00:00:00Z', '2025-12-12T00:00:00Z')
+ON CONFLICT (org_id, team_id, person_id) WHERE valid_to IS NULL
+DO UPDATE SET role_in_team = EXCLUDED.role_in_team;
 
 -- Opponent lobby (structural; finals lobbies have no single opposing team) --
 INSERT INTO public.opponent (id, org_id, name, short_name, game_id)
