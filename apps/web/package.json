@@ -16,34 +16,34 @@
     "ci": "pnpm lint && pnpm typecheck && pnpm test"
   },
   "dependencies": {
-    "@payloadcms/next": "3.90.2",
+    "@payloadcms/next": "3.91.0",
     "@raptor/assistant": "workspace:*",
     "@raptor/auth": "workspace:*",
     "@raptor/cms": "workspace:*",
     "@raptor/core": "workspace:*",
     "@raptor/observability": "workspace:*",
     "@raptor/ui": "workspace:*",
-    "better-auth": "1.7.7",
-    "next": "16.4.0",
-    "payload": "3.90.2",
+    "better-auth": "1.7.10",
+    "next": "16.4.2",
+    "payload": "3.91.0",
     "pg": "8.23.1",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "sharp": "0.35.5"
   },
   "devDependencies": {
-    "@axe-core/playwright": "4.13.0",
-    "@playwright/test": "1.64.0",
+    "@axe-core/playwright": "4.14.0",
+    "@playwright/test": "1.64.1",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "24.10.1",
     "@types/pg": "8.23.1",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "@vitest/coverage-v8": "5.0.3",
+    "@vitest/coverage-v8": "5.0.5",
     "axe-core": "4.14.0",
-    "jsdom": "30.1.2",
+    "jsdom": "30.1.3",
     "tailwindcss": "4.3.3",
     "typescript": "6.0.3",
-    "vitest": "5.0.3"
+    "vitest": "5.0.5"
   }
 }
