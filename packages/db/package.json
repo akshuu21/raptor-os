@@ -24,17 +24,17 @@
                     "ci":  "pnpm lint \u0026\u0026 pnpm typecheck \u0026\u0026 pnpm test"
                 },
     "dependencies":  {
-                         "@electric-sql/pglite":  "0.5.8",
+                         "@electric-sql/pglite":  "0.5.10",
                          "drizzle-orm":  "0.45.4",
                          "pg":  "8.23.1"
                      },
     "devDependencies":  {
                             "@types/node":  "24.10.1",
                             "@types/pg":  "8.23.1",
-                            "@vitest/coverage-v8":  "5.0.3",
+                            "@vitest/coverage-v8":  "5.0.5",
                             "drizzle-kit":  "0.31.11",
                             "tsx":  "4.23.15",
                             "typescript":  "6.0.3",
-                            "vitest":  "5.0.3"
+                            "vitest":  "5.0.5"
                         }
 }
