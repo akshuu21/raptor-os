@@ -1,0 +1,61 @@
+{
+  "organisation": "0c295a27-1295-4dcf-9a0e-2f77a772f14d",
+  "accounts": [
+    {
+      "role": "owner",
+      "email": "owner@raptor.local",
+      "password": "raptor_local_dev_only",
+      "name": "Raptor Owner",
+      "userId": "6f106c92-94c6-43df-85e0-d4b02d31c8a9",
+      "personId": "29602f2d-5e1a-467d-88d0-42fd8001d30c"
+    },
+    {
+      "role": "admin",
+      "email": "admin@raptor.local",
+      "password": "raptor_local_dev_only",
+      "name": "Raptor Admin",
+      "userId": "58439657-d317-4aea-a7f7-ec2846402fbf",
+      "personId": "8e23a0ab-ff7b-4d5a-ad4c-c67baa12e203"
+    },
+    {
+      "role": "manager",
+      "email": "manager@raptor.local",
+      "password": "raptor_local_dev_only",
+      "name": "Raptor Manager",
+      "userId": "477bcb1a-2e2d-4973-b2d6-d2ec0439f134",
+      "personId": "e09e4b95-9fd1-4e0b-bdd3-229dfd188f89"
+    },
+    {
+      "role": "analyst",
+      "email": "analyst@raptor.local",
+      "password": "raptor_local_dev_only",
+      "name": "Raptor Analyst",
+      "userId": "ff4a0cf7-cd40-4a12-8f50-151dcc331c15",
+      "personId": "8a11ef60-03fe-40ec-bddb-a58c4d7c526b"
+    },
+    {
+      "role": "coach",
+      "email": "coach@raptor.local",
+      "password": "raptor_local_dev_only",
+      "name": "Raptor Coach",
+      "userId": "784726e6-b45c-4898-9695-cd83cdd9c947",
+      "personId": "b6e1b1e7-eccb-41d7-ad4b-f9540981db7f"
+    },
+    {
+      "role": "player",
+      "email": "player@raptor.local",
+      "password": "raptor_local_dev_only",
+      "name": "Raptor Player",
+      "userId": "cbe9002e-fa27-4e36-8393-c79188b7a693",
+      "personId": "b6741a99-1bb5-4dee-8aaa-e56995dc06b1"
+    },
+    {
+      "role": "pending",
+      "email": "pending@raptor.local",
+      "password": "raptor_local_dev_only",
+      "name": "Raptor Pending",
+      "userId": "a9b720d5-cf19-450c-bd5e-6db4411416b4",
+      "personId": "3960732c-c70b-4253-8579-ccefdfff35ad"
+    }
+  ]
+}

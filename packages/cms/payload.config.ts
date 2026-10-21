@@ -5,7 +5,6 @@ import { lexicalEditor } from "@payloadcms/richtext-lexical";
 import { s3Storage } from "@payloadcms/storage-s3";
 import { tlsOptionsForDatabaseUrl } from "@raptor/auth/config";
 import { buildConfig } from "payload";
-import sharp from "sharp";
 
 import { Operators } from "./src/collections/operators.js";
 import { Media } from "./src/collections/media.js";
@@ -41,15 +40,34 @@ const srcDir = path.resolve(dirname, "src");
  * already excludes `api/*`; the admin document route is covered by it.
  */
 /**
- * Empty-string guard: `tlsOptionsForDatabaseUrl` parses with `new URL`,
- * which throws on `""`. The build evaluates this file without environment
- * (repo `.env.local` lives at the monorepo root, which Next does not read),
- * so an unset `PAYLOAD_DATABASE_URI` must degrade to an empty connection
- * string here and fail loudly at first request — not at build collection.
+ * sharp is optional at runtime, mandatory at build time.
+ *
+ * Image resizing/crops need it; plain reads and uploads of originals do not.
+ * It is loaded with a bundler-ignored dynamic import because Next.js
+ * externalises `sharp` out of serverless bundles (its own image optimizer
+ * owns that copy) — a static import 500s every route that evaluates this
+ * config on Vercel (proven in production logs). Locally and in CI the package
+ * is installed, so crops work there; where it is absent (Vercel lambda),
+ * uploads store originals and the admin warns instead of crashing.
  */
+const sharpModule = await import(/* webpackIgnore: true */ "sharp").catch(() => null);
+const sharp = sharpModule === null ? undefined : (sharpModule.default ?? sharpModule);
 const databaseUri = process.env["PAYLOAD_DATABASE_URI"] ?? "";
 const tls =
   databaseUri === "" ? { connectionString: "" } : tlsOptionsForDatabaseUrl(databaseUri);
+
+/**
+ * Storage is conditional by design: with S3 credentials present, uploads go
+ * to that bucket (staging/Vercel); without them, the s3Storage plugin is
+ * omitted and Payload's built-in local-disk storage takes over, writing to
+ * the media collection's `staticDir` (gitignored, served through the CMS
+ * file route). A fresh clone needs nothing beyond the database URL.
+ */
+const s3Configured = Boolean(
+  process.env["S3_BUCKET"] &&
+    process.env["S3_ACCESS_KEY_ID"] &&
+    process.env["S3_SECRET_ACCESS_KEY"],
+);
 
 export default buildConfig({
   secret: process.env["PAYLOAD_SECRET"] ?? "",
@@ -83,23 +101,25 @@ export default buildConfig({
   }),
   collections: [Operators, Media, News, Pages, Partners],
   globals: [SiteSettings, Recruitment],
-  plugins: [
-    s3Storage({
-      collections: {
-        cms_media: true,
-      },
-      bucket: process.env["S3_BUCKET"] ?? "",
-      config: {
-        credentials: {
-          accessKeyId: process.env["S3_ACCESS_KEY_ID"] ?? "",
-          secretAccessKey: process.env["S3_SECRET_ACCESS_KEY"] ?? "",
-        },
-        region: process.env["S3_REGION"] ?? "",
-        endpoint: process.env["S3_ENDPOINT"] ?? "",
-        forcePathStyle: true,
-      },
-    }),
-  ],
+  plugins: s3Configured
+    ? [
+        s3Storage({
+          collections: {
+            cms_media: true,
+          },
+          bucket: process.env["S3_BUCKET"] ?? "",
+          config: {
+            credentials: {
+              accessKeyId: process.env["S3_ACCESS_KEY_ID"] ?? "",
+              secretAccessKey: process.env["S3_SECRET_ACCESS_KEY"] ?? "",
+            },
+            region: process.env["S3_REGION"] ?? "",
+            endpoint: process.env["S3_ENDPOINT"] ?? "",
+            forcePathStyle: true,
+          },
+        }),
+      ]
+    : [],
   typescript: {
     outputFile: path.resolve(srcDir, "payload-types.ts"),
   },

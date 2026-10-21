@@ -6,6 +6,8 @@ import * as React from "react";
 
 import { Alert, Button, TextField } from "@raptor/ui";
 
+import { bindDefaultOrg } from "../../../server/org-actions";
+
 /**
  * Sign-in.
  *
@@ -28,13 +30,28 @@ import { Alert, Button, TextField } from "@raptor/ui";
  * `src/__tests__/no-client-token-storage.test.ts` scans the whole source tree
  * for `localStorage` / `sessionStorage` and fails the build if it reappears.
  *
+ * ONE STAGE, NOT TWO
+ * ------------------
+ * This form used to have a second stage: an enrolled account was answered
+ * `twoFactorRedirect` and the form asked for a 6-digit code. The `twoFactor`
+ * plugin is no longer installed on the server (see "THE DEMO BUILD" in
+ * `packages/auth/src/config.ts`), so there is no challenge to answer and no
+ * `/two-factor/*` route to answer it with. A password is the whole sign-in, for
+ * an owner and for an ordinary player alike.
+ *
+ * The client is not asked to detect the difference: the server no longer sends
+ * a challenge, so the branch that used to switch stages is gone rather than
+ * left to fail. A build that re-enables the challenge server-side needs the
+ * stage back — and the flag it reads, `twoFactorEnabled`, is still returned by
+ * the server.
+ *
  * ERROR HANDLING
  * --------------
  * Two codes are surfaced verbatim because the user has to act on them:
- * `MFA_REQUIRED` (enrol an authenticator) and `INVALID_CREDENTIALS` (retry).
- * Everything else becomes one generic sentence. Better Auth's raw error
- * messages are not written for end users and echoing them can disclose whether
- * an account exists.
+ * `MFA_REQUIRED` (an account that is privileged but carries no enrolment flag)
+ * and `INVALID_CREDENTIALS` (retry). Everything else becomes one generic
+ * sentence. Better Auth's raw error messages are not written for end users and
+ * echoing them can disclose whether an account exists.
  */
 
 /** Codes the UI is allowed to show. Anything else is collapsed. */
@@ -44,6 +61,15 @@ const SHOWN_ERROR_CODES: Readonly<Record<string, string>> = {
   INVALID_CREDENTIALS: "That email and password combination was not recognised.",
   USER_NOT_FOUND: "That email and password combination was not recognised.",
 };
+
+/**
+ * One Better Auth client for the whole flow.
+ *
+ * No client plugin: the two-factor client plugin was what put the
+ * `twoFactor.verifyTotp` action on the client, and there is no challenge to
+ * verify in this build.
+ */
+const authClient = createAuthClient();
 
 /**
  * Read one named value out of a submitted form as a string.
@@ -83,12 +109,28 @@ export function SignInForm({ callbackUrl, googleEnabled }: SignInFormProps): Rea
   const [showPassword, setShowPassword] = React.useState(false);
   const errorRef = React.useRef<HTMLDivElement>(null);
 
+  // The part both the password path and the code path end on. Binding the one
+  // organisation the account belongs to (if there is exactly one) removes the
+  // manual "paste an org id" step for everyone else; it is best-effort, and the
+  // switcher remains the fallback when there is zero or more than one.
+  const finishSignIn = React.useCallback(async (): Promise<void> => {
+    try {
+      await bindDefaultOrg();
+    } catch {
+      // Best-effort: the manual switcher is the standing fallback.
+    }
+    // `router.refresh()` re-runs the server components, so the layout's
+    // session guard sees the cookie that was just set. Without it the user
+    // would be bounced straight back to this page.
+    router.replace(callbackUrl);
+    router.refresh();
+  }, [callbackUrl, router]);
+
   const onGoogleSignIn = async (): Promise<void> => {
     if (pending) return;
     setPending(true);
     setErrorMessage(null);
     try {
-      const authClient = createAuthClient();
       // A full navigation, not fetch: the OAuth dance leaves the origin for
       // Google and returns to the callback URL. The session still arrives as an
       // httpOnly cookie — nothing here reads a token, same as the email flow.
@@ -111,7 +153,6 @@ export function SignInForm({ callbackUrl, googleEnabled }: SignInFormProps): Rea
     const password = readFormValue(form, "password");
 
     try {
-      const authClient = createAuthClient();
       const result = await authClient.signIn.email({ email, password, callbackURL: callbackUrl });
 
       if (result.error !== null && result.error !== undefined) {
@@ -122,11 +163,7 @@ export function SignInForm({ callbackUrl, googleEnabled }: SignInFormProps): Rea
         return;
       }
 
-      // `router.refresh()` re-runs the server components, so the layout's
-      // session guard sees the cookie that was just set. Without it the user
-      // would be bounced straight back to this page.
-      router.replace(callbackUrl);
-      router.refresh();
+      await finishSignIn();
     } catch {
       setErrorMessage("Sign-in failed. Try again, or contact an organisation owner.");
     } finally {
@@ -141,7 +178,13 @@ export function SignInForm({ callbackUrl, googleEnabled }: SignInFormProps): Rea
   }, [errorMessage]);
 
   return (
-    <form onSubmit={(event) => { void onSubmit(event); }} className="flex min-w-0 flex-col gap-6" noValidate={false}>
+    <form
+      onSubmit={(event) => {
+        void onSubmit(event);
+      }}
+      className="flex min-w-0 flex-col gap-6"
+      noValidate={false}
+    >
       {errorMessage === null ? null : (
         <div ref={errorRef} tabIndex={-1}>
           <Alert tone="danger" politeness="assertive">
@@ -219,9 +262,9 @@ export function SignInForm({ callbackUrl, googleEnabled }: SignInFormProps): Rea
       {/*
         Status region.
 
-        The button's own label changes to "Signing in…", which is visible but
-        NOT announced reliably — a label change on a control a screen reader is
-        not focused on is often missed entirely. This live region announces the
+        The button's own label changes to "Signing in…", which is visible but NOT
+        announced reliably — a label change on a control a screen reader is not
+        focused on is often missed entirely. This live region announces the
         state change explicitly, and it is `role="status"` so it does not
         interrupt.
       */}
